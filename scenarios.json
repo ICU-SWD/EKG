@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "scenario": "ผู้ป่วยชาย 55 ปี เจ็บแน่นหน้าอก",
+    "rhythm": "NSR",
+    "hr": 80,
+    "st_status": "Normal",
+    "question": "จงระบุรูปแบบคลื่นไฟฟ้าหัวใจนี้",
+    "answer": "Normal Sinus Rhythm"
+  },
+  {
+    "id": 2,
+    "scenario": "ผู้ป่วยหญิง 60 ปี หน้ามืด เหงื่อแตก",
+    "rhythm": "STEMI",
+    "hr": 50,
+    "st_status": "Elevate_II_III_aVF",
+    "question": "ผู้ป่วยมีภาวะ ST Elevate ที่ Wall ใด?",
+    "answer": "Inferior Wall"
+  }
+]
