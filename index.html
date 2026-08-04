@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ECG & ACS Simulation Monitor</title>
+    <style>
+        /* ธีมหน้าจอมอนิเตอร์โรงพยาบาล */
+        body { background: #050505; color: #fff; font-family: 'Segoe UI', Tahoma, sans-serif; display: flex; flex-direction: column; height: 100vh; margin: 0; padding: 15px; box-sizing: border-box; }
+        
+        .vitals { display: flex; justify-content: space-around; background: #111; padding: 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
+        .vital-box { text-align: center; }
+        .label { color: #888; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+        .value { font-size: 48px; font-weight: bold; text-shadow: 0 0 10px currentColor; }
+        .hr { color: #00ff00; } .bp { color: #ff3333; } .spo2 { color: #00ccff; }
+        
+        .canvas-container { flex-grow: 1; background: #0a0a0a; border-radius: 8px; border: 1px solid #333; display: flex; justify-content: center; align-items: center; overflow: hidden; padding: 10px; }
+        canvas { width: 100%; height: 100%; max-height: 350px; }
+        
+        .controls { background: #1a1a1a; padding: 15px; border-radius: 8px; margin-top: 15px; border: 1px solid #333; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        button { padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.2s; background: #444; color: white; }
+        button:hover { filter: brightness(1.2); transform: translateY(-2px); }
+        .btn-exam { background: #007bff; }
+        .btn-shock { background: #ff9900; color: #000; }
+        .btn-submit { background: #28a745; }
+    </style>
+</head>
+<body>
+
+    <div class="vitals">
+        <div class="vital-box"><div class="label">HR / Lead II</div><div class="value hr" id="valHR">80</div></div>
+        <div class="vital-box"><div class="label">NIBP (mmHg)</div><div class="value bp" id="valBP">120/80</div></div>
+        <div class="vital-box"><div class="label">SpO2 (%)</div><div class="value spo2" id="valSpO2">98</div></div>
+    </div>
+
+    <div class="canvas-container">
+        <canvas id="ecgMonitor" width="1000" height="300"></canvas>
+    </div>
+
+    <div class="controls">
+        <button class="btn-exam" onclick="loadScenario()">📥 โหลดโจทย์สอบ</button>
+        <button onclick="triggerSTEMI()">จำลองภาวะ STEMI</button>
+        <button onclick="triggerNormal()">กลับเป็น Normal Rhythm</button>
+        <button class="btn-shock" onclick="alert('⚡ ปล่อยพลังงานช็อกไฟฟ้าแล้ว!')">⚡ Defibrillate</button>
+        <button class="btn-submit" onclick="submitScore()">📝 ส่งคะแนนสอบ</button>
+    </div>
+
+    <!-- โหลดโค้ดเครื่องยนต์กราฟจากไฟล์ที่อยู่ใน GitHub เดียวกัน -->
+    <script src="./ecg-engine.js"></script>
+
+    <script>
+        // ฟังก์ชันดึงโจทย์จากไฟล์ JSON ที่อยู่ใน GitHub เดียวกัน
+        async function loadScenario() {
+            try {
+                const response = await fetch('./scenarios.json');
+                const scenarios = await response.json();
+                
+                let currentExam = scenarios[1]; // ดึงข้อที่ 2 (ทดสอบ)
+                
+                alert("สถานการณ์: " + currentExam.scenario + "\nคำถาม: " + currentExam.question);
+                document.getElementById('valHR').innerText = currentExam.hr;
+                
+                if(currentExam.st_status !== "Normal") {
+                    if(typeof triggerSTEMI === "function") triggerSTEMI(); 
+                } else {
+                    if(typeof triggerNormal === "function") triggerNormal();
+                }
+            } catch (error) {
+                alert("ไม่สามารถดึงโจทย์ได้ โปรดตรวจสอบไฟล์ scenarios.json บน GitHub");
+                console.error(error);
+            }
+        }
+
+        // ฟังก์ชันส่งคะแนนไปยัง Google Sheets ผ่าน GAS
+        function submitScore() {
+            let studentName = prompt("กรุณากรอกชื่อพยาบาลผู้สอบ:");
+            if (!studentName) return; 
+            
+            let score = 100; 
+            let timeUsed = "2 นาที 15 วินาที";
+
+            // ⚠️ สำคัญ: นำ URL ของ Web App จากหน้าต่าง GAS มาวางในเครื่องหมายคำพูดด้านล่าง
+            const gasAPI_URL = "https://script.google.com/macros/s/AKfycbzXQnWrqWlEUpJ6JtA5TKkwmk5d3AlmbGbfpMeJj2hDOFaSSbQxkh-Zk8xc3E807qbN/exec";
+            
+            if (gasAPI_URL === "https://script.google.com/macros/s/AKfycbzXQnWrqWlEUpJ6JtA5TKkwmk5d3AlmbGbfpMeJj2hDOFaSSbQxkh-Zk8xc3E807qbN/exec") {
+                alert("กรุณาใส่ลิงก์ Web App (GAS) ในโค้ดบรรทัดที่ 77 ก่อนครับ");
+                return;
+            }
+
+            // นำข้อมูลพ่วงไปกับ URL (Query Parameters)
+            let finalUrl = gasAPI_URL + "?name=" + encodeURIComponent(studentName) + "&score=" + score + "&time=" + encodeURIComponent(timeUsed);
+
+            alert("กำลังบันทึกข้อมูลลงตาราง...");
+
+            // ส่งข้อมูลไปหลังบ้าน
+            fetch(finalUrl)
+                .then(response => response.json())
+                .then(data => {
+                    if(data.status === "success") {
+                        alert("✅ " + data.message);
+                    } else {
+                        alert("❌ เกิดข้อผิดพลาด: " + data.message);
+                    }
+                })
+                .catch(error => {
+                    alert("❌ ติดต่อเซิร์ฟเวอร์ไม่ได้ โปรดตรวจสอบลิงก์ Web App");
+                    console.error(error);
+                });
+        }
+    </script>
+</body>
+</html>
